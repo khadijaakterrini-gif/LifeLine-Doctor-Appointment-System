@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  role        String
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient         Patient?
+  doctor          Doctor?
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Patient {
+  userId      Int      @id @map("user_id")
+  name        String
+  dob         String?
+  phone       String?
+  gender      String?
+  symptoms    String?
+  address     String?
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+  reviews         Review[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  userId          Int      @id @map("user_id")
+  name            String
+  specialty       String?
+  hospital        String?
+  area            String?
+  phone           String?
+  licenseNumber   String?  @map("license_number")
+  experienceYears Int?     @map("experience_years")
+  bio             String?
+  location        String?
+  consultationFee Float?   @map("consultation_fee")
+  rating          Float    @default(0)
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeSlots       TimeSlot[]
+  appointments    Appointment[]
+  reviews         Review[]
+
+  @@map("doctors")
+}
+
+model TimeSlot {
+  id          Int      @id @default(autoincrement())
+  doctorId    Int      @map("doctor_id")
+  day         String
+  date        String?
+  startTime   String   @map("start_time")
+  endTime     String   @map("end_time")
+
+  doctor      Doctor   @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+
+  @@map("time_slots")
+}
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  doctorId    Int      @map("doctor_id")
+  date        DateTime
+  time        String
+  reason      String?
+  status      String   @default("pending")
+
+  patient     Patient  @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  doctor      Doctor   @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  doctorId    Int      @map("doctor_id")
+  rating      Int
+  comment     String?
+
+  patient     Patient  @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  doctor      Doctor   @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+
+  @@unique([patientId, doctorId])
+  @@map("reviews")
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  title       String
+  message     String
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Otp {
+  email       String   @id
+  otp         String
+  expiresAt   DateTime @map("expires_at")
+
+  @@map("otps")
+}
